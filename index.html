@@ -1,0 +1,191 @@
+<html>
+  <head>
+    <title>AD Simülasyonu</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+      .slider {
+        margin-top: 15px;
+        height: 8px;
+        background: #999999;
+        outline: none;
+        opacity: 0.7;
+        transition: opacity .2s;
+        -webkit-transition: .2s;
+        -webkit-appearance: none;
+      }
+
+      .slider:hover {
+          opacity: 1;
+      }
+
+      .slider::-webkit-slider-thumb {
+          width: 25px;
+          height: 25px;
+          background: #111111;
+          border-radius: 50%;
+          cursor: pointer;
+          border-color: #666666;
+          -webkit-appearance: none;
+      }
+
+      .slider::-moz-range-thumb {
+          width: 25px;
+          height: 25px;
+          background: #111111;
+          border-radius: 50%;
+          background: #666666;
+          cursor: pointer;
+      }
+
+      button#reset{
+        background-color:  rgb(155, 32, 32);
+      }
+
+      input {
+        font-family: inherit;
+        outline: none;
+        background-color: #fff;
+        border: 1px solid #999999;
+        box-shadow: none;
+        height: 36px;
+        font-size: 13px;
+        padding: 0 12px;
+        border-radius: 3px;
+      }
+
+      table {
+          font-family: arial, sans-serif;
+          border-collapse: collapse;
+          width: 100%;
+      }
+
+      td, th {
+          border: 1px solid #dddddd;
+          text-align: right;
+          padding: 8px;
+      }
+
+      tr:nth-child(even) {
+          background-color: #dddddd;
+      }
+
+      button {
+        font-size: 15px;
+        color: #fff;
+        background-color: #999999;
+        border-radius: 3px;
+        min-height: 25px;
+        padding: 4px 10px;
+        text-decoration: none;
+        cursor: pointer;
+        display: inline-block;
+        line-height: 25px;
+        border: 1px solid transparent;
+        vertical-align: middle;
+        -webkit-appearance: none;
+        margin-top: 10px;
+        margin-bottom: 10px;
+      }
+    </style>
+  </head>
+  <body>
+    <center>
+      <input id="v-min" placeholder="Vmin" type="text">
+      <input id="v-max" placeholder="Vmax" type="text">
+      <input id="resolution" placeholder="Resolution" type="text">
+      <input id="v-a" type="text" placeholder="Va">
+
+      <br>
+      <b>Simülasyon Hızı:</b>
+      <input class="slider" id="speed" type="range" min="250" max="2750" value="1500">
+      <br>
+
+      <button onclick="result(0)">Rampa Yöntemi</button>
+      <button onclick="result(1)">Ardışıl Yöntem</button>
+      <button id="reset" onclick="reset()">Reset</button>
+      <label id="quantum"></label>
+
+      <table id="result">
+        <tr>
+          <th>Adım</th>
+          <th>Va</th>
+          <th>Sayısal Bilgi</th>
+          <th>Vd</th>
+        </tr>
+      </table>
+    </center>
+    <script>
+      function reset() {
+        location.reload()
+      }
+
+      function sleep(ms) {
+        return new Promise(resolve => setTimeout(resolve, ms))
+      }
+
+      function writeQuantum(quantum){
+        document.getElementById("quantum").innerHTML = "<b>Quantum: </b>" + quantum
+      }
+
+      function writeTableRow(data) {
+        var tr = document.createElement("tr")
+
+        for (let j = 0; j < 4; j++) {
+          var td = document.createElement("td")
+          td.appendChild(document.createTextNode(data[j]))
+          tr.appendChild(td)
+        }
+        var result = document.getElementById("result")
+        result.appendChild(tr)
+      }
+
+      async function result(num) {
+        var vA         = parseFloat(document.getElementById("v-a").value)
+        var vMin       = parseFloat(document.getElementById("v-min").value)
+        var vMax       = parseFloat(document.getElementById("v-max").value)
+        var resolution = parseInt(document.getElementById("resolution").value)
+        var speed      = parseInt(document.getElementById("speed").value)
+        var quantum    = parseFloat(((vMax - vMin)/(2**resolution - 1)).toFixed(2))
+
+        writeQuantum(quantum)
+
+        switch (num) {
+          case 0:
+            var bit   = 0
+            var index = 0
+            var vD    = vMin
+
+            while(true){
+              var data = [index, vA, bit.toString(2), vD]
+              writeTableRow(data)
+
+              if (vA < vD ) break;
+              await sleep(speed);
+              vD    += quantum
+              bit   += 1
+              index += 1
+            }
+            break;
+          case 1:
+            var shift = resolution
+            var bit = 2**(shift-1)
+
+            for (let index = 0; index < resolution; index++) {
+              var data = [index, vA, bit.toString(2), bit * quantum]
+              writeTableRow(data)
+
+              await sleep(speed);
+              if (vA < bit*quantum) {
+                bit -= 2**(shift-1)
+              }
+              bit += 2**(shift-2)
+              shift -= 1
+            }
+            break;
+          default:
+            break;
+        }
+      }
+    </script>
+  </body>
+</html>
